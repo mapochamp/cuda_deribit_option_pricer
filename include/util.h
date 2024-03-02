@@ -45,44 +45,6 @@ namespace util
     return chrono::duration_cast<chrono::nanoseconds>(end - start).count();
   }
 
-  inline double round_up(double x, double min_increment)
-  {
-    double remainder = std::fmod(x, min_increment);
-    if (remainder == 0)
-      return x;
-    else
-      return x + min_increment - remainder;
-  }
-
-  inline double round_down(double x, double min_increment)
-  {
-    double remainder = std::fmod(x, min_increment);
-    if (remainder == 0)
-      return x;
-    else
-      return std::floor(x / min_increment) * min_increment;
-  }
-
-  inline double round_nearest(double x, double min_increment)
-  {
-    double up = round_up(x, min_increment);
-    double down = round_down(x, min_increment);
-    return (std::fabs(x - down) > std::fabs(up - x)) ? up : down;
-  }
-
-  inline double round_side(double x, double min_increment, Models::Side side)
-  {
-    switch (side)
-    {
-    case Models::Side::Bid:
-      return round_down(x, min_increment);
-    case Models::Side::Ask:
-      return round_up(x, min_increment);
-    default:
-      return round_nearest(x, min_increment);
-    }
-  }
-
   namespace encoding
   {
     inline std::string hmac(const std::string &secret, const std::string &msg)

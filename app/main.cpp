@@ -6,8 +6,8 @@ using json = nlohmann::json;
 
 int main()
 {
-  BitmexWebsocket ws_cli;
-  BitmexMarketDataGateway md(ws_cli);
+  DeribitWebsocket ws_cli;
+  DeribitMarketDataGateway md(ws_cli);
 
   ws_cli.connect();
 }

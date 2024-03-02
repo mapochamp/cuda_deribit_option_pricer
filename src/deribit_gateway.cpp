@@ -1,17 +1,17 @@
 #include "deribit_gateway.h"
 
-BitmexMarketDataGateway::BitmexMarketDataGateway(BitmexWebsocket &ws)
+DeribitMarketDataGateway::DeribitMarketDataGateway(DeribitWebsocket &ws)
     : ws(ws)
 {
-  ws.connect_changed += Poco::delegate(this, &BitmexMarketDataGateway::subscribe_to_quote);
+  ws.connect_changed += Poco::delegate(this, &DeribitMarketDataGateway::subscribe_to_quote);
 }
 
-BitmexMarketDataGateway::~BitmexMarketDataGateway()
+DeribitMarketDataGateway::~DeribitMarketDataGateway()
 {
-  ws.connect_changed -= Poco::delegate(this, &BitmexMarketDataGateway::subscribe_to_quote);
+  ws.connect_changed -= Poco::delegate(this, &DeribitMarketDataGateway::subscribe_to_quote);
 }
 
-void BitmexMarketDataGateway::subscribe_to_quote(const void *, Models::ConnectivityStatus &cs)
+void DeribitMarketDataGateway::subscribe_to_quote(const void *, Models::ConnectivityStatus &cs)
 {
     if (cs == Models::ConnectivityStatus::connected)
     {
