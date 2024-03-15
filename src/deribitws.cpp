@@ -53,14 +53,6 @@ void DeribitWebsocket::on_message(const std::string &raw)
 {
   json msg = json::parse(raw);
 
-  std::cout << "***********************************" << std::endl;
-  std::cout << "GET_RAW_PAYLOAD()" << std::endl;
-  std::cout << msg.dump() << std::endl;
-  std::cout << "\nDUMP" << std::endl;
-  // directly print the entire JSON message
-  std::cout << msg.dump(4) << std::endl;
-  std::cout << "***********************************\n" << std::endl;
-
   if (msg.contains("error"))
   {
     this->logger.warning(msg["error"]);
@@ -70,13 +62,33 @@ void DeribitWebsocket::on_message(const std::string &raw)
   // check if message is a subcription response
   if (msg.contains("method"))
   {
-      if(msg["method"].contains("subscription"))
+      if(msg["method"].get<std::string>() == "subscription")
       {
-          // we've received a subscription response this means we got an update
-          // in vols/price/ or something in one of the options we've subbed to.
-          // we will now parse what we need and update our map
+          // TODO: we've received a subscription response this means we got an
+          // update in vols/price/ or something in one of the options we've
+          // subbed to.  we will now parse what we need and update our map
+          //if(this->handlers.count(msg["params"]["instrument_name"].get<std:string>()))
+          //{
+          //    this->handlers[msg["params"]["instrument_name"].get<std::string>()](msg);
+          //}
+          //std::cout << msg["params"]["instrument_name"].get<std::string>() << std::endl;
+      }
+      else
+      {
+          this->logger.warning("Get message on un-specified table");
       }
       return;
+  }
+  else
+  {
+      std::cout << "***********************************" << std::endl;
+      std::cout << "got something other than a subscription" << std::endl;;
+      //std::cout << "GET_RAW_PAYLOAD()" << std::endl;
+      //std::cout << msg.dump() << std::endl;
+      //std::cout << "\nDUMP" << std::endl;
+      // directly print the entire JSON message
+      //std::cout << msg.dump(4) << std::endl;
+      std::cout << "***********************************\n" << std::endl;
   }
 }
 
