@@ -5,7 +5,6 @@
 #include "json.hpp"
 #include "models.h"
 #include "deribitws.h"
-#include "interfaces.h"
 #include "Poco/UUIDGenerator.h"
 #include "Poco/DateTime.h"
 #include "Poco/Timespan.h"

@@ -66,10 +66,17 @@ void DeribitWebsocket::on_message(const std::string &raw)
     this->logger.warning(msg["error"]);
     return;
   }
-  if (msg.contains("subscribe"))
+
+  // check if message is a subcription response
+  if (msg.contains("method"))
   {
-    this->logger.information("Subscribe to " + msg["subscribe"].get<std::string>() + " " + (msg["success"].get<bool>() ? "success" : "fail"));
-    return;
+      if(msg["method"].contains("subscription"))
+      {
+          // we've received a subscription response this means we got an update
+          // in vols/price/ or something in one of the options we've subbed to.
+          // we will now parse what we need and update our map
+      }
+      return;
   }
 }
 
