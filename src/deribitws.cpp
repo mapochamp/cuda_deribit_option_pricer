@@ -64,14 +64,7 @@ void DeribitWebsocket::on_message(const std::string &raw)
   {
       if(msg["method"].get<std::string>() == "subscription")
       {
-          // TODO: we've received a subscription response this means we got an
-          // update in vols/price/ or something in one of the options we've
-          // subbed to.  we will now parse what we need and update our map
-          //if(this->handlers.count(msg["params"]["instrument_name"].get<std:string>()))
-          //{
-          //    this->handlers[msg["params"]["instrument_name"].get<std::string>()](msg);
-          //}
-          //std::cout << msg["params"]["instrument_name"].get<std::string>() << std::endl;
+          this->handlers["new_quote"](msg);
       }
       else
       {
@@ -81,14 +74,18 @@ void DeribitWebsocket::on_message(const std::string &raw)
   }
   else
   {
-      std::cout << "***********************************" << std::endl;
-      std::cout << "got something other than a subscription" << std::endl;;
-      //std::cout << "GET_RAW_PAYLOAD()" << std::endl;
-      //std::cout << msg.dump() << std::endl;
-      //std::cout << "\nDUMP" << std::endl;
-      // directly print the entire JSON message
-      //std::cout << msg.dump(4) << std::endl;
-      std::cout << "***********************************\n" << std::endl;
+      if(msg.contains("result") && msg["result"].is_array())
+	  {
+		  const auto& result = msg["result"];
+		  if(!result.empty() && result[0].is_object())
+		  {
+			  this->handlers["orderbook"](msg);
+		  }
+      } 
+      else 
+      {
+          std::cerr << "The get_instruments 'result' key is missing or is not an array" << std::endl;
+      }
   }
 }
 

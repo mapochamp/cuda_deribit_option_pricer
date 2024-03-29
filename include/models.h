@@ -1,5 +1,7 @@
 #pragma once
 #include <iostream>
+#include <memory>
+#include <unordered_map>
 #include "json.hpp"
 #include "Poco/DateTime.h"
 #include "Poco/DateTimeParser.h"
@@ -35,41 +37,32 @@ namespace Models
   class IncrementalTicker : public Timestamped
   {
       public:
-          float estimated_delivery_price;
           float bid_iv;
           float ask_iv;
-          float underlying_price;
           float mark_iv;
           float best_ask_price;
-          float min_price;
+          float best_bid_price;
           float mark_price;
-          float index_price;
           std::string instrument_name;
 
           IncrementalTicker(const json &update, bool use_server_time = false);
           // TODO: Do we really need Poco:DateTime here?
-          IncrementalTicker(float _estimated_delivery_price,
-                            float _bid_iv,
+          IncrementalTicker(float _bid_iv,
                             float _ask_iv,
-                            float _underlying_price,
                             float _mark_iv,
                             float _best_ask_price,
-                            float _min_price,
+                            float _best_bid_price,
                             float _mark_price,
-                            float _index_price,
                             const std::string &_instrument_name,
                             Poco::DateTime &&_time)
               :
 
-                  estimated_delivery_price(_estimated_delivery_price),
                   bid_iv(_bid_iv),
                   ask_iv(_ask_iv),
-                  underlying_price(_underlying_price),
                   mark_iv(_mark_iv),
                   best_ask_price(_best_ask_price),
-                  min_price(_min_price),
+                  best_bid_price(_best_bid_price),
                   mark_price(_mark_price),
-                  index_price(_index_price),
                   instrument_name(_instrument_name)
           {
           }
@@ -79,15 +72,16 @@ namespace Models
   {
       public:
         OptionType option_type;
-        uint32_t instrument_id;
-        uint32_t strike;
-        uint32_t expiration_timestamp;
+        int instrument_id;
+        int strike;
+        int expiration_timestamp;
         std::string instrument_name;
 
+		OrderBookInfo();
         OrderBookInfo(OptionType _option_type,
-                      uint32_t _instrument_id,
-                      uint32_t _strike,
-                      uint32_t _expiration_timestamp,
+                      int _instrument_id,
+                      int _strike,
+                      int _expiration_timestamp,
                       std::string _instrument_name) :
                       option_type(_option_type),
                       instrument_id(_instrument_id),
@@ -97,5 +91,63 @@ namespace Models
         {
         }
   };
+
+  class Option
+  {
+      public:
+          float bid_iv;
+          float ask_iv;
+          float mark_iv;
+          float best_ask_price;
+          float best_bid_price;
+          float mark_price;
+          std::string instrument_name;
+          OptionType option_type;
+          int strike;
+          int expiration;
+
+		  Option() :
+                  bid_iv(0),
+                  ask_iv(0),
+                  mark_iv(0),
+                  best_ask_price(0),
+                  best_bid_price(0),
+                  mark_price(0),
+                  instrument_name("none"),
+                  option_type(OptionType::call),
+                  strike(0),
+                  expiration(0)
+		  {
+		  }
+          Option( float _bid_iv,
+                  float _ask_iv,
+                  float _mark_iv,
+                  float _best_ask_price,
+                  float _best_bid_price,
+                  float _mark_price,
+                  std::string _instrument_name,
+                  OptionType _option_type,
+                  int _strike,
+                  int _expiration)
+              :
+                  bid_iv(_bid_iv),
+                  ask_iv(_ask_iv),
+                  mark_iv(_mark_iv),
+                  best_ask_price(_best_ask_price),
+                  best_bid_price(_best_bid_price),
+                  mark_price(_mark_price),
+                  instrument_name(_instrument_name),
+                  option_type(_option_type),
+                  strike(_strike),
+                  expiration(_expiration)
+          {
+          }
+  };
+
+  // === DEFINES === 
+  using StrikeMap = std::unordered_map<int, Option>;
+  using OptionTypeMap = std::unordered_map<OptionType, StrikeMap>;
+  using ExpiryMap = std::unordered_map<int, OptionTypeMap>;
+
   // === FUNCTIONS ===
 } // namespace Models
