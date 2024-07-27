@@ -3,8 +3,8 @@
 #include <stdexcept>
 #include <regex>
 
-OptionMapManager::OptionMapManager(Interfaces::IMarketDataGateway &md, DeribitWebsocket &ws)
-    : md(md), ws(ws)
+OptionMapManager::OptionMapManager(Interfaces::IMarketDataGateway &md, DeribitWebsocket &ws, Models::OptionsMapPtr data)
+    : md(md), ws(ws), optionsMap(data)
 {
   md.incremental_ticker += Poco::delegate(this, &OptionMapManager::update_option_map_incremental);
   md.order_book_info += Poco::delegate(this, &OptionMapManager::update_option_map_init);
@@ -33,7 +33,7 @@ void OptionMapManager::update_option_map_incremental(const void *, Models::Incre
                            	  strike,
                            	  expiration);
 
-	Models::Option old_option = optionsMap[expiration][option_type][strike];
+	Models::Option old_option = (*optionsMap)[expiration][option_type][strike];
 	if(new_option.bid_iv == -1)
 	{
 		new_option.bid_iv = old_option.bid_iv;
@@ -59,7 +59,7 @@ void OptionMapManager::update_option_map_incremental(const void *, Models::Incre
 		new_option.mark_price = old_option.mark_price;
 	}
 
-	optionsMap[expiration][option_type][strike] = new_option;
+	(*optionsMap)[expiration][option_type][strike] = new_option;
 
 	std::cout << "=====================================================" << std::endl;
 	std::cout << "New option update: " 	<< new_option.instrument_name << std::endl;
@@ -72,6 +72,9 @@ void OptionMapManager::update_option_map_incremental(const void *, Models::Incre
 	std::cout << "strike: " 			<< new_option.strike << std::endl;
 	std::cout << "expiration: " 		<< new_option.expiration << std::endl;
 	std::cout << "=====================================================" << std::endl;
+
+    mapUpdate = Models::OptionsMapUpdate(option_type, strike, expiration);
+    this->optionsMapUpdate(this, mapUpdate);
 }
 
 void OptionMapManager::update_option_map_init(const void *, Models::OrderBookInfo &option)
@@ -89,7 +92,7 @@ void OptionMapManager::update_option_map_init(const void *, Models::OrderBookInf
                            	  option.strike,
                            	  expiration);
 
-	optionsMap[expiration][option.option_type][option.strike] = new_option;
+	(*optionsMap)[expiration][option.option_type][option.strike] = new_option;
 	subscribe_to_option(option.instrument_name);
 }
   

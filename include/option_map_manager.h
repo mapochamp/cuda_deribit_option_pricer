@@ -23,11 +23,13 @@ private:
 
   int sub_count = 1;
 
+  Models::OptionsMapUpdate mapUpdate;
+
   // <key: strike, value: option>
   std::unordered_map<int, Models::Option> latest_calls;
   std::unordered_map<int, Models::Option> latest_puts;
 
-  Models::ExpiryMap optionsMap;
+  Models::OptionsMapPtr optionsMap;
 
   void update_option_map_incremental(const void *, Models::IncrementalTicker &option);
   void update_option_map_init(const void *, Models::OrderBookInfo &option);
@@ -37,16 +39,17 @@ private:
   int parse_expiration_from_instrument_name(const std::string &instrument_name);
   Models::OptionType parse_option_type_from_instrument_name(const std::string &instrument_name);
 
-    // Map of month abbreviations to their numeric representation
-    std::unordered_map<std::string, std::string> monthMap = {
-        {"JAN", "01"}, {"FEB", "02"}, {"MAR", "03"}, {"APR", "04"}, {"MAY", "05"}, {"JUN", "06"},
-        {"JUL", "07"}, {"AUG", "08"}, {"SEP", "09"}, {"OCT", "10"}, {"NOV", "11"}, {"DEC", "12"}
-    };
+  // Map of month abbreviations to their numeric representation
+  std::unordered_map<std::string, std::string> monthMap = {
+      {"JAN", "01"}, {"FEB", "02"}, {"MAR", "03"}, {"APR", "04"}, {"MAY", "05"}, {"JUN", "06"},
+      {"JUL", "07"}, {"AUG", "08"}, {"SEP", "09"}, {"OCT", "10"}, {"NOV", "11"}, {"DEC", "12"}
+  };
 
 public:
-  OptionMapManager(Interfaces::IMarketDataGateway &md, DeribitWebsocket &ws);
+  OptionMapManager(Interfaces::IMarketDataGateway &md, DeribitWebsocket &ws, Models::OptionsMapPtr data);
   ~OptionMapManager();
 
+  Poco::BasicEvent<Models::OptionsMapUpdate> optionsMapUpdate;
   std::unordered_map<int, Models::Option> get_latest_calls(int expiry) override;
   std::unordered_map<int, Models::Option> get_latest_puts(int expiry)  override;
 };

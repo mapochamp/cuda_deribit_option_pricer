@@ -144,10 +144,29 @@ namespace Models
           }
   };
 
+  class OptionsMapUpdate
+  {
+      public:
+        OptionType option_type;
+        int strike;
+        int expiration;
+
+		OptionsMapUpdate() {}
+        OptionsMapUpdate(OptionType _option_type,
+                      int _strike,
+                      int _expiration) :
+                      option_type(_option_type),
+                      strike(_strike),
+                      expiration(_expiration)
+        {
+        }
+  };
+
   // === DEFINES === 
   using StrikeMap = std::unordered_map<int, Option>;
   using OptionTypeMap = std::unordered_map<OptionType, StrikeMap>;
   using ExpiryMap = std::unordered_map<int, OptionTypeMap>;
+  using OptionsMapPtr = std::shared_ptr<ExpiryMap>;
 
   // === FUNCTIONS ===
 } // namespace Models
