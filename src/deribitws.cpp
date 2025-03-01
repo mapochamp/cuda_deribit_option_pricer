@@ -7,6 +7,9 @@ DeribitWebsocket::DeribitWebsocket()
   ws.set_on_open_cb([this]() {
     this->connect_status = Models::ConnectivityStatus::connected;
     this->connect_changed(this, this->connect_status);
+    if (this->on_open_callback) {
+      this->on_open_callback();
+    }
   });
   ws.set_on_close_cb([this]() {
     this->connect_status = Models::ConnectivityStatus::disconnected;
@@ -22,6 +25,9 @@ DeribitWebsocket::DeribitWebsocket(const std::string &uri)
   ws.set_on_open_cb([this]() {
     this->connect_status = Models::ConnectivityStatus::connected;
     this->connect_changed(this, this->connect_status);
+    if (this->on_open_callback) {
+      this->on_open_callback();
+    }
   });
   ws.set_on_close_cb([this]() {
     this->connect_status = Models::ConnectivityStatus::disconnected;
@@ -29,6 +35,7 @@ DeribitWebsocket::DeribitWebsocket(const std::string &uri)
   });
 }
 
+#if 0
 DeribitWebsocket::DeribitWebsocket(const std::string &uri, const std::string &api_key, const std::string &api_secret)
     : uri(uri), api_key(api_key), api_secret(api_secret)
 {
@@ -38,12 +45,16 @@ DeribitWebsocket::DeribitWebsocket(const std::string &uri, const std::string &ap
   ws.set_on_open_cb([this]() {
     this->connect_status = Models::ConnectivityStatus::connected;
     this->connect_changed(this, this->connect_status);
+    if (this->on_open_callback) {
+      this->on_open_callback();
+    }
   });
   ws.set_on_close_cb([this]() {
     this->connect_status = Models::ConnectivityStatus::disconnected;
     this->connect_changed(this, this->connect_status);
   });
 }
+#endif
 
 DeribitWebsocket::~DeribitWebsocket()
 {
@@ -94,6 +105,29 @@ void DeribitWebsocket::set_handler(const std::string &h_name, std::function<void
   this->handlers.insert({h_name, handler});
 }
 
+void DeribitWebsocket::set_on_open_cb(std::function<void()> cb)
+{
+  this->on_open_callback = cb;
+}
+
+void DeribitWebsocket::public_subscribe(const std::vector<std::string>& channels)
+{
+  json j = {
+    {"method", "public/subscribe"},
+    {"params", {
+      {"channels", channels}
+    }},
+    {"jsonrpc", "2.0"},
+    {"id", 42}
+  };
+  this->send(j);
+  std::cout << "Subscribed to channels: ";
+  for (const auto& channel : channels) {
+    std::cout << channel << " ";
+  }
+  std::cout << std::endl;
+}
+
 void DeribitWebsocket::connect()
 {
   ws.connect();
@@ -109,6 +143,7 @@ void DeribitWebsocket::send(json &msg)
   ws.send(msg);
 }
 
+#if 0
 std::string DeribitWebsocket::signed_url()
 {
   std::string expires = std::to_string(util::get_seconds_timestamp(util::current_time()).count() + 60);
@@ -121,3 +156,4 @@ std::string DeribitWebsocket::signed_url()
 
   return signed_url;
 }
+#endif

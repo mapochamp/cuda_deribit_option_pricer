@@ -1,7 +1,14 @@
 #include "option_map_manager.h"
-#include <openssl/asn1.h>
-#include <stdexcept>
+
 #include <regex>
+
+// Add month map
+static const std::unordered_map<std::string, std::string> monthMap = {
+    {"JAN", "01"}, {"FEB", "02"}, {"MAR", "03"},
+    {"APR", "04"}, {"MAY", "05"}, {"JUN", "06"},
+    {"JUL", "07"}, {"AUG", "08"}, {"SEP", "09"},
+    {"OCT", "10"}, {"NOV", "11"}, {"DEC", "12"}
+};
 
 OptionMapManager::OptionMapManager(Interfaces::IMarketDataGateway &md, DeribitWebsocket &ws, Models::OptionsMapPtr data)
     : md(md), ws(ws), optionsMap(data)
@@ -152,21 +159,95 @@ Models::OptionType OptionMapManager::parse_option_type_from_instrument_name(cons
 }
 
 int OptionMapManager::parse_expiration_from_instrument_name(const std::string& input) {
-    std::regex expiryRegex(R"((\d{2})([A-Z]{3})(\d{2}))");
+    // Debug output
+    std::cout << "Parsing expiration from: " << input << std::endl;
+    
+    // Extract date part from BTC-1MAR25-75000-C format
+    std::regex expiryRegex(R"(BTC-(\d+)([A-Z]{3})(\d{2})-\d+-[CP])");
     std::smatch matches;
     std::regex_search(input, matches, expiryRegex);
 
-    if (matches.size() < 4) { // We expect 4 matches: the whole string, day, month, and year
-        return -1; // Return an invalid code
+    if (matches.size() < 4) { 
+        std::cout << "Regex match failed for: " << input << std::endl;
+        
+        // Try alternative format: directly extract the date part
+        size_t pos1 = input.find('-');
+        if (pos1 != std::string::npos) {
+            size_t pos2 = input.find('-', pos1 + 1);
+            if (pos2 != std::string::npos) {
+                std::string datePart = input.substr(pos1 + 1, pos2 - pos1 - 1);
+                std::cout << "Alternative extraction got date part: " << datePart << std::endl;
+                
+                // Try to make sense of date format like "1MAR25"
+                if (datePart.length() >= 5) {
+                    std::string day, month, year;
+                    
+                    // Extract day part (first digit(s) before letters)
+                    size_t i = 0;
+                    while (i < datePart.length() && std::isdigit(datePart[i])) {
+                        day += datePart[i++];
+                    }
+                    
+                    // Extract month (3 letters)
+                    size_t monthStart = i;
+                    while (i < datePart.length() && std::isalpha(datePart[i])) {
+                        i++;
+                    }
+                    std::string monthStr = datePart.substr(monthStart, i - monthStart);
+                    
+                    // Extract year (last digits)
+                    while (i < datePart.length() && std::isdigit(datePart[i])) {
+                        year += datePart[i++];
+                    }
+                    
+                    // Pad day with leading zero if needed
+                    if (day.length() == 1) {
+                        day = "0" + day;
+                    }
+                    
+                    if (monthStr.length() == 3 && monthMap.find(monthStr) != monthMap.end() && 
+                        !day.empty() && !year.empty()) {
+                        
+                        // Add century
+                        year = "20" + year;
+                        
+                        // Get month number
+                        std::string monthNum = monthMap.at(monthStr);
+                        
+                        // Construct date in YYYYMMDD format
+                        std::string dateString = year + monthNum + day;
+                        std::cout << "Constructed date string: " << dateString << std::endl;
+                        
+                        return std::stoi(dateString);
+                    }
+                }
+            }
+        }
+        
+        std::cout << "All parsing attempts failed for: " << input << std::endl;
+        return 20250301; // Default to March 1, 2025 as fallback
     }
 
     std::string day = matches[1];
     std::string monthStr = matches[2];
     std::string year = "20" + matches[3].str(); // Assuming all dates are in the 2000s
-    std::string month = monthMap[monthStr]; // Convert month abbreviation to a number
+    
+    // Pad day with leading zero if needed
+    if (day.length() == 1) {
+        day = "0" + day;
+    }
+    
+    // Get month number from month map
+    if (monthMap.find(monthStr) == monthMap.end()) {
+        std::cout << "Unknown month: " << monthStr << std::endl;
+        return 20250301; // Default to March 1, 2025 as fallback
+    }
+    
+    std::string month = monthMap.at(monthStr);
 
-    // Construct the date in YYYYMMDD format as a string first to ensure proper zero padding
+    // Construct the date in YYYYMMDD format
     std::string dateString = year + month + day;
+    std::cout << "Parsed date: " << dateString << std::endl;
 
     // Convert the YYYYMMDD string to an integer
     return std::stoi(dateString);

@@ -30,6 +30,8 @@ public:
   void close();
   void send(json &j);
   void set_handler(const std::string &, std::function<void(json)>);
+  void set_on_open_cb(std::function<void()> cb);
+  void public_subscribe(const std::vector<std::string>& channels);
 
 private:
   WS ws;
@@ -37,6 +39,7 @@ private:
   std::string api_key = "";
   std::string api_secret = "";
   Models::ConnectivityStatus connect_status = Models::ConnectivityStatus::disconnected;
+  std::function<void()> on_open_callback = nullptr;
 
   std::map<std::string, std::function<void(json)>> handlers;
   Poco::Logger &logger = Poco::Logger::get("gr-deribitws");

@@ -45,6 +45,7 @@ namespace util
     return chrono::duration_cast<chrono::nanoseconds>(end - start).count();
   }
 
+#if 0
   namespace encoding
   {
     inline std::string hmac(const std::string &secret, const std::string &msg)
@@ -67,4 +68,5 @@ namespace util
       return (ss.str());
     }
   } // namespace encoding
+#endif
 } // namespace util

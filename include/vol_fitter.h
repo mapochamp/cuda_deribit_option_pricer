@@ -1,61 +1,52 @@
 #pragma once
-#include <optional>
-#include <string>
-#include <cmath>
-#include <unordered_map>
-#include "json.hpp"
-#include "models.h"
-#include "interfaces.h"
-#include "Poco/Delegate.h"
-#include "ceres/ceres.h"
+#include <vector>
+#include <ceres/ceres.h>
 #include "option_map_manager.h"
+#include <Poco/Delegate.h>
+#include <Poco/BasicEvent.h>
 
 class VolFitter 
 {
+public:
+struct MarketData {
+    float logMoneyness;
+    float totalVariance;
+};
+
+    VolFitter(OptionMapManager &omm, Models::OptionsMapPtr data);
+    ~VolFitter();
+
+    int solve(const std::vector<MarketData>& market_data);
+    float get_svi_vol(float K, float F, float T, float a, float b, float rho, float m, float sigma);
+    float calculate_time_to_expiry(int expiration);
+    
+    const std::vector<double>& get_fitted_params() const { return fitted_params; }
+    
+    // Signal for GUI updates - using a simple class as event parameter
+    struct UpdateEvent { };
+    Poco::BasicEvent<UpdateEvent> volFitterUpdate;
+
 private:
-	OptionMapManager &omm;
+    OptionMapManager &omm;
     Models::OptionsMapPtr optionsMap;
+    std::vector<double> fitted_params;
 
-    // Struct to hold market data
-    struct MarketData {
-        double logMoneyness;  // log(K/F)
-        double totalVariance; // σ^2 * T
-    };
+struct SVICostFunctor {
+    SVICostFunctor(double k, double w) : k_(k), w_(w) {}
 
-    // SVI model parameters: {a, b, rho, m, sigma}
-    // Cost functor for SVI model
-    struct SVICostFunctor {
-        SVICostFunctor(double logMoneyness, double totalVariance)
-            : logMoneyness_(logMoneyness), totalVariance_(totalVariance) {}
+    template <typename T>
+    bool operator()(const T* const params, T* residual) const {
+        // params = {a, b, rho, m, sigma}
+        T k_diff = k_ - params[3];  // k - m
+        T w = params[0] + params[1] * (params[2] * k_diff + sqrt(k_diff * k_diff + params[4] * params[4]));
+        residual[0] = w - w_;
+        return true;
+    }
 
-        template <typename T>
-            bool operator()(const T* const params, T* residual) const {
-                const T& a = params[0];
-                const T& b = params[1];
-                const T& rho = params[2];
-                const T& m = params[3];
-                const T& sigma = params[4];
-
-                // SVI model
-                T svi_variance = a + b * (rho * (logMoneyness_ - m) + sqrt((logMoneyness_ - m) * (logMoneyness_ - m) + sigma * sigma));
-
-                // Compute the residual
-                residual[0] = svi_variance - T(totalVariance_);
-
-                return true;
-            }
-
-        private:
-        const double logMoneyness_;
-        const double totalVariance_;
-    };
+private:
+    const double k_;
+    const double w_;
+};
 
     void onOptionsMapUpdate(const void*, Models::OptionsMapUpdate& newOption);
-
-
-public:
-  VolFitter(OptionMapManager &omm, Models::OptionsMapPtr data);
-  ~VolFitter();
-
-  int solve();
 };
