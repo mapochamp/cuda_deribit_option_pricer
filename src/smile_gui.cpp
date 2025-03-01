@@ -27,17 +27,45 @@ SimpleVolatilityChart::~SimpleVolatilityChart()
 
 void SimpleVolatilityChart::setupUI()
 {
+    std::cout << "Setting up UI" << std::endl;
     QVBoxLayout *mainLayout = new QVBoxLayout(this);
     
+    // Create the chart with sample data to ensure it displays
     m_chart = new QChart();
     m_chart->setTitle("Volatility Smile");
     m_chart->legend()->setVisible(true);
     m_chart->legend()->setAlignment(Qt::AlignBottom);
     
+    // Add a simple series to verify chart rendering
+    QLineSeries *testSeries = new QLineSeries();
+    testSeries->setName("Test Data");
+    testSeries->append(0, 0);
+    testSeries->append(10, 10);
+    testSeries->append(20, 5);
+    testSeries->append(30, 15);
+    m_chart->addSeries(testSeries);
+    
+    // Create default axes
+    m_chart->createDefaultAxes();
+    
+    // Configure axes appearance
+    QAbstractAxis *xAxis = m_chart->axes(Qt::Horizontal).first();
+    QAbstractAxis *yAxis = m_chart->axes(Qt::Vertical).first();
+    
+    if (xAxis && yAxis) {
+        xAxis->setTitleText("Strike");
+        yAxis->setTitleText("Implied Volatility (%)");
+        xAxis->setRange(0, 100000);
+        yAxis->setRange(0, 200);
+    }
+    
+    // Create chart view
     m_chartView = new QChartView(m_chart);
     m_chartView->setRenderHint(QPainter::Antialiasing);
     m_chartView->setMinimumSize(600, 400);
+    std::cout << "Chart created with test data" << std::endl;
     
+    // Create control panel
     QHBoxLayout *controlLayout = new QHBoxLayout();
     
     m_expiryComboBox = new QComboBox();
@@ -61,11 +89,18 @@ void SimpleVolatilityChart::setupUI()
     
     setLayout(mainLayout);
     
-    QGraphicsTextItem *placeholder = new QGraphicsTextItem("Waiting for data...");
-    placeholder->setPos(m_chart->plotArea().center());
+    // Add some placeholder text but ensure it's visible
+    QGraphicsTextItem *placeholder = new QGraphicsTextItem("Waiting for option data...");
+    QFont font = placeholder->font();
+    font.setPointSize(14);
+    placeholder->setFont(font);
+    placeholder->setDefaultTextColor(Qt::red);
+    placeholder->setPos(m_chart->plotArea().center().x() - 150, m_chart->plotArea().center().y());
     m_chart->scene()->addItem(placeholder);
     
+    // Set a reasonable size
     setMinimumSize(800, 600);
+    std::cout << "UI setup complete" << std::endl;
 }
 
 void SimpleVolatilityChart::refreshData()
